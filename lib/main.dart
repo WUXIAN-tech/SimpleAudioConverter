@@ -118,7 +118,9 @@ class _MyHomePageState extends State<MyHomePage>
   void openShared(SharedMedia media) {
     Path? path;
     try {
-      path = Path(uri: media.attachments!.first!.path, sharedInto: true);
+      final attachment = media.attachments?.firstOrNull;
+      if (attachment?.path == null) return;
+      path = Path(uri: attachment!.path, sharedInto: true);
       unawaited(openFile(path));
     } catch (e, s) {
       if (mounted) {
@@ -646,10 +648,10 @@ class _MyHomePageState extends State<MyHomePage>
               onPressed: () async {
                 await ffmpegSession.cancel();
                 setState(() {
-                  this.convertProgress = null;
-                  this.ffmpegSession = null;
-                  done = false;
-                });
+                      this.convertProgress = null;
+                      this.ffmpegSession = null;
+                      this.done = false;
+                    });
               },
               expanded: true,
               padding: const EdgeInsets.symmetric(
