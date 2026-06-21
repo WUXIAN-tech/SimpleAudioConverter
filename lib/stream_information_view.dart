@@ -15,27 +15,36 @@ class StreamInformationView extends StatelessWidget {
         ? null
         : "${(bitrateNum / 1000.0).toStringAsFixed(0)} Kbps";
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          "Stream ${info.getIndex()} Information:",
-          style: TextTheme.of(
-            context,
-          ).titleMedium?.copyWith(fontWeight: FontWeight.w500),
-        ),
-        Table(
-          children: [
-            TableRow(children: tr("Type:", info.getType(), context)),
-            TableRow(children: tr("Codec:", info.getCodec(), context)),
-            TableRow(children: tr("Format:", info.getFormat(), context)),
-            TableRow(children: tr("Channel Layout:", info.getChannelLayout(), context)),
-            TableRow(children: tr("Bitrate:", bitrate, context)),
-            TableRow(children: tr("Sample Rate:", info.getSampleRate(), context)),
-          ],
-        ),
-        const SizedBox(height: 4),
-      ],
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "流 ${info.getIndex()} 信息：",
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Table(
+            columnWidths: const {
+              0: IntrinsicColumnWidth(),
+              1: FlexColumnWidth(),
+            },
+            children: [
+              TableRow(children: tr("类型：", info.getType(), context)),
+              TableRow(children: tr("编码：", info.getCodec(), context)),
+              TableRow(children: tr("格式：", info.getFormat(), context)),
+              TableRow(children: tr("声道布局：", info.getChannelLayout(), context)),
+              TableRow(children: tr("比特率：", bitrate, context)),
+              TableRow(children: tr("采样率：", info.getSampleRate(), context)),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

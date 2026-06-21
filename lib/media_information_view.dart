@@ -1,6 +1,7 @@
 import "package:ffmpeg_kit_flutter_new_audio/media_information.dart";
 import "package:flutter/material.dart";
 
+import "liquid_glass.dart";
 import "picked_file_info.dart";
 import "stream_information_view.dart";
 import "utils.dart";
@@ -14,27 +15,42 @@ class MediaInformationView extends StatefulWidget {
   State<MediaInformationView> createState() => _MediaInformationViewState();
 }
 
-class _MediaInformationViewState extends State<MediaInformationView> {
+class _MediaInformationViewState extends State<MediaInformationView>
+    with SingleTickerProviderStateMixin {
   MediaInformation get info => widget.info.mediaInformation;
 
   String get filename => widget.info.filename;
 
   bool open = false;
 
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _toggle() {
+    setState(() => open = !open);
+    if (open) {
+      _controller.forward();
+    } else {
+      _controller.reverse();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (!open) {
-      return InkWell(
-        onTap: () => setState(() => open = true),
-        child: Row(
-          children: [
-            const Icon(Icons.keyboard_arrow_right),
-            Text("Media Information", style: TextTheme.of(context).titleLarge),
-          ],
-        ),
-      );
-    }
-
     final int? bitrateNum = int.tryParse(info.getBitrate() ?? "");
     final String? bitrate = bitrateNum == null
         ? null
@@ -43,35 +59,73 @@ class _MediaInformationViewState extends State<MediaInformationView> {
     final double? durationNum = double.tryParse(info.getDuration() ?? "");
     final String? duration = durationNum == null ? null : formatSeconds(durationNum);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        InkWell(
-          onTap: () => setState(() => open = false),
-          child: Row(
-            children: [
-              const Icon(Icons.keyboard_arrow_down),
-              Text("Media Information", style: TextTheme.of(context).titleLarge),
-            ],
+    return LiquidGlass(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          InkWell(
+            onTap: _toggle,
+            borderRadius: BorderRadius.circular(12),
+            child: Row(
+              children: [
+                Icon(
+                  open
+                      ? Icons.keyboard_arrow_down_rounded
+                      : Icons.keyboard_arrow_right_rounded,
+                  size: 22,
+                  color: const Color(0xFF8E8E93),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  "媒体信息",
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-        //filenames can get long, so it's outside of the table, to ensure it doesn't get wrapped _too_ much
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: tr("File name:  ", filename, context, inRow: true),
-        ),
-        const SizedBox(height: 1),
-        Table(
-          children: [
-            TableRow(children: tr("Format:", info.getFormat(), context)),
-            TableRow(children: tr("Size:", strToSize(info.getSize()), context)),
-            TableRow(children: tr("Duration:", duration, context)),
-            TableRow(children: tr("Bitrate:", bitrate, context)),
-          ],
-        ),
-        const SizedBox(height: 8),
-        for (final stream in info.getStreams()) StreamInformationView(info: stream),
-      ],
+          AnimatedSize(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOutCubic,
+            alignment: Alignment.topCenter,
+            child: !open
+                ? const SizedBox.shrink()
+                : Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // 文件名
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: tr("文件名：  ", filename, context, inRow: true),
+                        ),
+                        const SizedBox(height: 8),
+                        Table(
+                          columnWidths: const {
+                            0: IntrinsicColumnWidth(),
+                            1: FlexColumnWidth(),
+                          },
+                          children: [
+                            TableRow(children: tr("格式：", info.getFormat(), context)),
+                            TableRow(children: tr("大小：", strToSize(info.getSize()), context)),
+                            TableRow(children: tr("时长：", duration, context)),
+                            TableRow(children: tr("比特率：", bitrate, context)),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        for (final stream in info.getStreams())
+                          StreamInformationView(info: stream),
+                      ],
+                    ),
+                  ),
+          ),
+        ],
+      ),
     );
   }
 
