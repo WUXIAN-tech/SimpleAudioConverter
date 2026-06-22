@@ -284,11 +284,11 @@ class _GlowingBorderPainter extends CustomPainter {
 
     // 创建扫过的路径（弧段长度由进度或固定角度决定）
     final sweepAngle = max(0.5, pi * 0.8); // 固定弧段约 144 度
-    final path = Path()..addArc(rect.toRect(), angle, sweepAngle);
+    final path = Path()..addArc(rect.outerRect, angle, sweepAngle);
 
     // 渐变画笔 + 发光效果
     final sweepShader = SweepGradient(
-      center: Offset(size.width / 2, size.height / 2),
+      center: Alignment.center,
       startAngle: angle - pi / 2,
       endAngle: angle - pi / 2 + pi * 2,
       tileMode: TileMode.clamp,
