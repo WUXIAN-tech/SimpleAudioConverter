@@ -1,5 +1,4 @@
 import "dart:math";
-import "dart:ui" as ui;
 
 import "package:flutter/material.dart";
 
@@ -52,7 +51,7 @@ class LiquidGlass extends StatelessWidget {
             // 第一层：背景高斯模糊
             Positioned.fill(
               child: BackdropFilter(
-                filter: ui.ImageFilter.blur(
+                filter: ImageFilter.blur(
                   sigmaX: blurSigma,
                   sigmaY: blurSigma,
                 ),
@@ -288,18 +287,20 @@ class _GlowingBorderPainter extends CustomPainter {
     final path = Path()..addArc(rect.toRect(), angle, sweepAngle);
 
     // 渐变画笔 + 发光效果
+    final sweepShader = SweepGradient(
+      center: Offset(size.width / 2, size.height / 2),
+      startAngle: angle - pi / 2,
+      endAngle: angle - pi / 2 + pi * 2,
+      tileMode: TileMode.clamp,
+      colors: gradientColors,
+    ).createShader(
+      Rect.fromLTWH(0, 0, size.width, size.height),
+    );
     final paint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = borderWidth
       ..strokeCap = StrokeCap.round
-      ..shader = ui.Gradient.sweep(
-        Offset(size.width / 2, size.height / 2),
-        size.shortestSide * 0.45,
-        gradientColors,
-        null,
-        TileMode.clamp,
-        angle - pi / 2,
-      )
+      ..shader = sweepShader
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3.0); // 外发光
 
     canvas.drawPath(path, paint);
