@@ -1,7 +1,6 @@
 import "dart:math";
 
 import "package:flutter/material.dart";
-import "dart:ui" as ui;
 
 /// 单个粒子数据模型
 class _Particle {

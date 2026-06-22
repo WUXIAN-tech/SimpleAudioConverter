@@ -1,5 +1,5 @@
 import "dart:math";
-import "dart:ui";
+import "dart:ui" as ui;
 
 import "package:flutter/material.dart";
 
@@ -52,7 +52,7 @@ class LiquidGlass extends StatelessWidget {
             // 第一层：背景高斯模糊
             Positioned.fill(
               child: BackdropFilter(
-                filter: ImageFilter.blur(
+                filter: ui.ImageFilter.blur(
                   sigmaX: blurSigma,
                   sigmaY: blurSigma,
                 ),
