@@ -445,7 +445,7 @@ class _LiquidGlassButtonState extends State<LiquidGlassButton>
                       fontWeight: FontWeight.w600,
                       letterSpacing: -0.2,
                     ),
-                    child: IconThemeData(
+                    child: IconTheme(
                       data: const IconThemeData(
                         color: Color(0xF2FFFFFF),
                         size: 21,

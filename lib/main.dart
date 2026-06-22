@@ -397,6 +397,7 @@ class _MyHomePageState extends State<MyHomePage>
 
   Widget _buildEmptyState({Key? key}) {
     return AnimatedBuilder(
+      key: key,
       animation: _pageAnimation,
       builder: (BuildContext context, Widget? child) {
         final double t = _pageAnimation.value;
@@ -408,7 +409,6 @@ class _MyHomePageState extends State<MyHomePage>
           ),
         );
       },
-      // 可滚动容器，带弹性物理
       child: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -558,6 +558,7 @@ class _MyHomePageState extends State<MyHomePage>
     required bool isConverting,
   }) {
     return AnimatedBuilder(
+      key: key,
       animation: _pageAnimation,
       builder: (BuildContext context, Widget? child) {
         final double t = _pageAnimation.value;

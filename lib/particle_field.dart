@@ -47,9 +47,7 @@ class _ParticleFieldState extends State<ParticleField>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late final List<_Particle> _particles;
-  final Random _random = Random(88); // 固定种子
-
-  Size? _lastSize;
+  final Random _random = Random(88);
 
   @override
   void initState() {
@@ -92,9 +90,6 @@ class _ParticleFieldState extends State<ParticleField>
         return LayoutBuilder(
           builder: (context, constraints) {
             final size = Size(constraints.maxWidth, constraints.maxHeight);
-            if (_lastSize != size && size.width > 0 && size.height > 0) {
-              _lastSize = size;
-            }
             return CustomPaint(
               size: size,
               painter: _ParticlePainter(

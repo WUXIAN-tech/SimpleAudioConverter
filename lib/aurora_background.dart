@@ -1,5 +1,3 @@
-import "dart:math";
-
 import "package:flutter/material.dart";
 
 /// 华为沉浸流光背景（Layer 1）
@@ -24,8 +22,6 @@ class _AuroraBackgroundState extends State<AuroraBackground>
   late final AnimationController _orb2Controller;
   // 光团 3 动画控制器（青色调，辅助氛围）
   late final AnimationController _orb3Controller;
-
-  final Random _random = Random(42); // 固定种子保证每次一致
 
   @override
   void initState() {
