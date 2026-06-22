@@ -20,8 +20,10 @@ import "package:path_provider/path_provider.dart";
 import "package:share_handler/share_handler.dart";
 import "package:share_plus/share_plus.dart";
 
+import "aurora_background.dart";
 import "liquid_glass.dart";
 import "media_information_view.dart";
+import "particle_field.dart";
 import "path.dart";
 import "picked_file_info.dart";
 import "target_file_type.dart";
@@ -40,10 +42,8 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return TechApp(
       title: "音频转换器",
-      // 苹果风格：主色为黑色（亮色）/白色（暗色），不再使用绿色
-      primary: const Color(0xFF000000),
+      primary: const Color(0xFF00D4AA), // 青色主色（暗黑科技感）
       secondary: const Color(0xFF8E8E93),
-      themeMode: ThemeMode.system,
       home: const MyHomePage(),
     );
   }
@@ -72,7 +72,7 @@ class _MyHomePageState extends State<MyHomePage>
   bool voiceOptimization = false;
   String? sharedWithApp;
 
-  // 动画控制器
+  // 页面进入动画控制器
   late final AnimationController _pageController;
   late final Animation<double> _pageAnimation;
 
@@ -88,7 +88,6 @@ class _MyHomePageState extends State<MyHomePage>
     );
     unawaited(initShareReceiving());
 
-    // 3D 转场动画
     _pageController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 700),
@@ -106,7 +105,6 @@ class _MyHomePageState extends State<MyHomePage>
     super.dispose();
   }
 
-  // Platform messages are asynchronous, so we initialize in an async method.
   Future<void> initShareReceiving() async {
     final handler = ShareHandlerPlatform.instance;
     final SharedMedia? media = await handler.getInitialSharedMedia();
@@ -149,7 +147,6 @@ class _MyHomePageState extends State<MyHomePage>
           error: "无法获取读取权限",
         );
       }
-
       setState(() => loading = false);
       path.deleteIfNecessary();
       return;
@@ -220,7 +217,6 @@ class _MyHomePageState extends State<MyHomePage>
       finalSize = null;
       sharedWithApp = null;
     });
-    // 文件加载完成后重新播放进入动画
     _pageController.reset();
     _pageController.forward();
   }
@@ -250,6 +246,8 @@ class _MyHomePageState extends State<MyHomePage>
     _pageController.forward();
   }
 
+  // ==================== 四层架构主构建 ====================
+
   @override
   Widget build(BuildContext context) {
     final thisInputFileInfo = inputFileInfo;
@@ -260,11 +258,12 @@ class _MyHomePageState extends State<MyHomePage>
     final thisFinalSize = finalSize;
     final thisSharedWithApp = sharedWithApp;
 
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    // 是否正在转换（用于流光走圈边框）
+    final bool isConverting =
+        thisConvertProgress != null && !done;
 
     return Scaffold(
       extendBodyBehindAppBar: true,
-      // 移除左上角图标，使用简洁的透明 AppBar
       appBar: AppBar(
         leading: thisInputFileInfo != null
             ? IconButton(
@@ -286,98 +285,29 @@ class _MyHomePageState extends State<MyHomePage>
       ),
       body: Stack(
         children: [
-          // 背景渐变层（白色系，营造层次感）
-          Positioned.fill(
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 600),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: isDark
-                      ? [const Color(0xFF1C1C1E), const Color(0xFF000000)]
-                      : [const Color(0xFFF2F2F7), const Color(0xFFFFFFFF)],
-                ),
-              ),
-            ),
-          ),
-          // 装饰性光晕（液态玻璃背景氛围）
-          Positioned(
-            top: -100,
-            right: -80,
-            child: IgnorePointer(
-              child: Container(
-                width: 280,
-                height: 280,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [
-                      isDark
-                          ? const Color(0x22FFFFFF)
-                          : const Color(0x338E8E93),
-                      Colors.transparent,
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: -120,
-            left: -100,
-            child: IgnorePointer(
-              child: Container(
-                width: 320,
-                height: 320,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [
-                      isDark
-                          ? const Color(0x18FFFFFF)
-                          : const Color(0x228E8E93),
-                      Colors.transparent,
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-          // 主内容
+          // ════════════════════════════════════════════════════════
+          // Layer 1：华为沉浸流光背景（暗青黑底色 + 动态光团）
+          // ════════════════════════════════════════════════════════
+          const Positioned.fill(child: AuroraBackground()),
+
+          // ════════════════════════════════════════════════════════
+          // Layer 2：微光粒子场（呼吸浮动粒子）
+          // ════════════════════════════════════════════════════════
+          const Positioned.fill(child: ParticleField(count: 20)),
+
+          // ════════════════════════════════════════════════════════
+          // Layer 3 & 4：内容层（液态玻璃卡片 + 极简文字图标）
+          // 使用弹性滚动物理，突出玻璃对背景的扭曲效果
+          // ════════════════════════════════════════════════════════
           SafeArea(
             child: loading
-                ? const Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        SizedBox(
-                          width: 28,
-                          height: 28,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Color(0xFF8E8E93),
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: 16),
-                        Text(
-                          "正在读取文件…",
-                          style: TextStyle(
-                            color: Color(0xFF8E8E93),
-                            fontSize: 15,
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
+                ? _buildLoadingOverlay()
                 : AnimatedSwitcher(
                     duration: const Duration(milliseconds: 500),
                     switchInCurve: Curves.easeOutCubic,
                     switchOutCurve: Curves.easeInCubic,
-                    transitionBuilder: (Widget child, Animation<double> anim) {
-                      // 3D 丝滑转场：Y 轴旋转 + 缩放 + 淡入
+                    transitionBuilder:
+                        (Widget child, Animation<double> anim) {
                       return AnimatedBuilder(
                         animation: anim,
                         builder: (BuildContext context, Widget? c) {
@@ -412,6 +342,7 @@ class _MyHomePageState extends State<MyHomePage>
                             sharedParams: thisSharedParams,
                             finalSize: thisFinalSize,
                             sharedWithApp: thisSharedWithApp,
+                            isConverting: isConverting,
                           ),
                   ),
           ),
@@ -420,7 +351,50 @@ class _MyHomePageState extends State<MyHomePage>
     );
   }
 
-  // 空状态：选择文件
+  /// 加载中的覆盖层
+  Widget _buildLoadingOverlay() {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // 玻璃卡片包裹加载指示器
+          LiquidGlass(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 32,
+              vertical: 24,
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      Color(0xFF00D4AA),
+                    ),
+                  ),
+                ),
+                SizedBox(width: 16),
+                Text(
+                  "正在读取文件…",
+                  style: TextStyle(
+                    color: Color(0x99FFFFFF),
+                    fontSize: 15,
+                    fontWeight: FontWeight.w300,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ==================== 空状态：选择文件 ====================
+
   Widget _buildEmptyState({Key? key}) {
     return AnimatedBuilder(
       animation: _pageAnimation,
@@ -434,66 +408,105 @@ class _MyHomePageState extends State<MyHomePage>
           ),
         );
       },
-      child: Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // 标题
-              Text(
-                "音频转换器",
-                style: TextTheme.of(context).displayMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
+      // 可滚动容器，带弹性物理
+      child: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 40),
+
+                // 主标题区域（Layer 4：极简文字）
+                Text(
+                  "音频转换器",
+                  style: TextStyle(
+                    fontSize: 30,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.5,
+                    color: Colors.white.withOpacity(0.95),
+                    shadows: const [
+                      Shadow(
+                        color: Color(0x30FFFFFF),
+                        blurRadius: 12,
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                "选择一个音频文件，开始转换",
-                style: TextTheme.of(context).bodyMedium?.copyWith(
-                  color: const Color(0xFF8E8E93),
+                const SizedBox(height: 10),
+                Text(
+                  "选择一个视频或音频文件，开始转换",
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w300,
+                    color: Colors.white.withOpacity(0.55),
+                    height: 1.5,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 40),
-              // 主按钮：液态玻璃质感
-              LiquidGlassButton(
-                onPressed: () async => _pickFile(),
-                expanded: true,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 18,
+                const SizedBox(height: 48),
+
+                // 核心操作区（Layer 3：大块液态玻璃卡片）
+                LiquidGlass(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // 选择文件按钮（宽扁胶囊形）
+                      LiquidGlassButton(
+                        onPressed: () async => _pickFile(),
+                        expanded: true,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 32,
+                          vertical: 22,
+                        ),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.folder_open_rounded, size: 22),
+                            SizedBox(width: 10),
+                            Text("选择文件", style: TextStyle(fontSize: 17)),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+
+                      // 分隔提示
+                      Text(
+                        "或",
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.white.withOpacity(0.45),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+
+                      // 分享提示文字
+                      Text(
+                        "也可以从其他应用分享媒体文件到本应用",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.white.withOpacity(0.45),
+                          height: 1.6,
+                          fontWeight: FontWeight.w300,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                  ),
                 ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.folder_open_rounded, size: 22),
-                    SizedBox(width: 8),
-                    Text("选择文件", style: TextStyle(fontSize: 17)),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-              // 提示文字
-              Text(
-                "或",
-                style: TextStyle(
-                  fontSize: 14,
-                  color: const Color(0xFF8E8E93),
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                "也可以从其他应用分享音频文件到本应用",
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: const Color(0xFF8E8E93),
-                  height: 1.4,
-                ),
-              ),
-            ],
+
+                const SizedBox(height: 60),
+              ],
+            ),
           ),
         ),
       ),
@@ -527,11 +540,11 @@ class _MyHomePageState extends State<MyHomePage>
           stacktrace: s.toString(),
         );
       }
-      return;
     }
   }
 
-  // 转换视图
+  // ==================== 转换视图 ====================
+
   Widget _buildConvertView({
     Key? key,
     required PickedFileInfo inputFileInfo,
@@ -542,6 +555,7 @@ class _MyHomePageState extends State<MyHomePage>
     required ShareParams? sharedParams,
     required String? finalSize,
     required String? sharedWithApp,
+    required bool isConverting,
   }) {
     return AnimatedBuilder(
       animation: _pageAnimation,
@@ -555,93 +569,125 @@ class _MyHomePageState extends State<MyHomePage>
           ),
         );
       },
+      // 弹性滚动，突出玻璃扭曲效果
       child: ListView(
         key: key,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        physics: const BouncingScrollPhysics(
+          decelerationRate: ScrollDecelerationRate.fast,
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         children: [
-          // 媒体信息卡片
+          // ── 媒体信息卡片（液态玻璃） ──
           MediaInformationView(info: inputFileInfo),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
 
-          // 滤镜选项
+          // ── 滤镜选项区 ──
           if (convertProgress == null && !done) ...[
             _buildSectionLabel("滤镜"),
             const SizedBox(height: 10),
             _buildVoiceOptimizationCard(),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
             _buildSectionLabel("目标格式"),
             const SizedBox(height: 10),
             _buildFormatSelector(targetFileType),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
             _buildSectionLabel("转换"),
             const SizedBox(height: 12),
-            LiquidGlassButton(
-              onPressed: () async => _pickDestinationFile(
-                inputFileInfo,
-                targetFileType,
-              ),
-              expanded: true,
-              padding: const EdgeInsets.symmetric(
-                horizontal: 20,
-                vertical: 16,
-              ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
+
+            // 转换按钮组（包裹在大玻璃卡片内）
+            LiquidGlass(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Column(
                 children: [
-                  Icon(Icons.save_alt_rounded, size: 20),
-                  SizedBox(width: 8),
-                  Text("选择保存位置", style: TextStyle(fontSize: 16)),
-                ],
-              ),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              "或",
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                color: const Color(0xFF8E8E93),
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 10),
-            LiquidGlassButton(
-              onPressed: () async => _shareToApp(
-                inputFileInfo,
-                targetFileType,
-              ),
-              expanded: true,
-              padding: const EdgeInsets.symmetric(
-                horizontal: 20,
-                vertical: 16,
-              ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.ios_share_rounded, size: 20),
-                  SizedBox(width: 8),
-                  Text("分享到应用", style: TextStyle(fontSize: 16)),
+                  // 保存位置按钮
+                  LiquidGlassButton(
+                    onPressed: () async => _pickDestinationFile(
+                      inputFileInfo,
+                      targetFileType,
+                    ),
+                    expanded: true,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 28,
+                      vertical: 20,
+                    ),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.save_alt_rounded, size: 21),
+                        SizedBox(width: 10),
+                        Text("选择保存位置",
+                            style: TextStyle(fontSize: 16)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+
+                  // 分隔符
+                  Center(
+                    child: Text(
+                      "或",
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.white.withOpacity(0.40),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+
+                  // 分享到应用按钮
+                  LiquidGlassButton(
+                    onPressed: () async => _shareToApp(
+                      inputFileInfo,
+                      targetFileType,
+                    ),
+                    expanded: true,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 28,
+                      vertical: 20,
+                    ),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.ios_share_rounded, size: 21),
+                        SizedBox(width: 10),
+                        Text("分享到应用",
+                            style: TextStyle(fontSize: 16)),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
           ],
 
-          // 进度显示
+          // ── 进度显示区（带流光走圈边框） ──
           if (convertProgress != null || done) ...[
             const SizedBox(height: 8),
             _buildSectionLabel("进度"),
-            const SizedBox(height: 16),
-            _buildProgressCard(
-              convertProgress: convertProgress,
-              done: done,
-              targetFileType: targetFileType,
-              finalSize: finalSize,
+            const SizedBox(height: 14),
+            AnimatedGlassBorder(
+              isRunning: isConverting,
+              progress: convertProgress ?? 0.0,
+              borderRadius: 24,
+              borderWidth: 2.0,
+              gradientColors: const [
+                Color(0xFF00D4AA), // 青色
+                Color(0xFF00BFFF), // 天蓝
+                Color(0xFF7B68EE), // 淡紫
+              ],
+              child: _buildProgressCard(
+                convertProgress: convertProgress,
+                done: done,
+                targetFileType: targetFileType,
+                finalSize: finalSize,
+              ),
             ),
           ],
 
-          // 取消按钮
+          // ── 取消转换按钮 ──
           if (ffmpegSession != null) ...[
             const SizedBox(height: 16),
             LiquidGlassButton(
@@ -655,34 +701,34 @@ class _MyHomePageState extends State<MyHomePage>
               },
               expanded: true,
               padding: const EdgeInsets.symmetric(
-                horizontal: 20,
-                vertical: 14,
+                horizontal: 28,
+                vertical: 18,
               ),
               tint: const Color(0xFFFF3B30),
               child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.close_rounded, size: 20, color: Color(0xFFFF3B30)),
+                  Icon(Icons.close_rounded, size: 20,
+                      color: Color(0xFFFF3B30)),
                   SizedBox(width: 8),
-                  Text(
-                    "取消转换",
-                    style: TextStyle(fontSize: 16, color: Color(0xFFFF3B30)),
-                  ),
+                  Text("取消转换",
+                      style:
+                          TextStyle(fontSize: 16, color: Color(0xFFFF3B30))),
                 ],
               ),
             ),
           ],
 
-          // 完成后的分享按钮
+          // ── 完成后再次分享 ──
           if (sharedParams != null) ...[
             const SizedBox(height: 16),
             LiquidGlassButton(
-              onPressed: () => unawaited(share(sharedParams)),
+              onPressed: () => unawaited(share(sharedParams!)),
               expanded: true,
               padding: const EdgeInsets.symmetric(
-                horizontal: 20,
-                vertical: 14,
+                horizontal: 28,
+                vertical: 18,
               ),
               child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -696,52 +742,57 @@ class _MyHomePageState extends State<MyHomePage>
             ),
           ],
 
-          // 分享成功提示
+          // ── 分享成功提示 ──
           if (sharedWithApp != null) ...[
             const SizedBox(height: 16),
             LiquidGlass(
-              padding: const EdgeInsets.all(14),
-              tint: const Color(0xFF000000),
-              tintOpacity: 0.04,
+              padding: const EdgeInsets.all(18),
+              tint: const Color(0xFF00D4AA),
+              tintOpacity: 0.06,
               child: Row(
                 children: [
-                  const Icon(Icons.check_circle_rounded, size: 18),
-                  const SizedBox(width: 8),
+                  const Icon(Icons.check_circle_rounded, size: 20,
+                      color: Color(0xFF00D4AA)),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       "已成功分享至：$sharedWithApp",
-                      style: const TextStyle(fontSize: 14),
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Color(0xF2FFFFFF),
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
           ],
-          const SizedBox(height: 24),
+          const SizedBox(height: 36),
         ],
       ),
     );
   }
 
+  /// 区段标签（极简小字）
   Widget _buildSectionLabel(String text) {
     return Padding(
-      padding: const EdgeInsets.only(left: 4),
+      padding: const EdgeInsets.only(left: 6, bottom: 2),
       child: Text(
-        text,
+        text.toUpperCase(),
         style: TextStyle(
-          fontSize: 13,
+          fontSize: 11,
           fontWeight: FontWeight.w600,
-          color: const Color(0xFF8E8E93),
-          letterSpacing: 0.2,
+          color: Colors.white.withOpacity(0.35),
+          letterSpacing: 1.5,
         ),
       ),
     );
   }
 
-  // 语音优化选项卡片
+  // ── 语音优化选项卡片 ──
   Widget _buildVoiceOptimizationCard() {
     return LiquidGlass(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       child: Row(
         children: [
           Expanded(
@@ -750,14 +801,19 @@ class _MyHomePageState extends State<MyHomePage>
               children: [
                 const Text(
                   "语音优化",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xF2FFFFFF),
+                  ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 4),
                 Text(
-                  "降低背景噪音，优化人声",
+                  "降低背景噪音，优化人声清晰度",
                   style: TextStyle(
                     fontSize: 13,
-                    color: const Color(0xFF8E8E93),
+                    fontWeight: FontWeight.w300,
+                    color: Colors.white.withOpacity(0.50),
                   ),
                 ),
               ],
@@ -768,17 +824,17 @@ class _MyHomePageState extends State<MyHomePage>
             onChanged: (bool value) => setState(() {
               voiceOptimization = value;
             }),
-            activeColor: Theme.of(context).colorScheme.primary,
+            activeColor: const Color(0xFF00D4AA),
           ),
         ],
       ),
     );
   }
 
-  // 格式选择器
+  // ── 格式选择器 ──
   Widget _buildFormatSelector(TargetFileType targetFileType) {
     return LiquidGlass(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
       child: Column(
         children: [
           _buildFormatOption(
@@ -791,7 +847,7 @@ class _MyHomePageState extends State<MyHomePage>
           Divider(
             height: 1,
             indent: 56,
-            color: Theme.of(context).dividerTheme.color,
+            color: Colors.white.withOpacity(0.08),
           ),
           _buildFormatOption(
             targetFileType: targetFileType,
@@ -817,13 +873,14 @@ class _MyHomePageState extends State<MyHomePage>
       onTap: () => setState(() {
         targetFileType.extension = value;
       }),
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(18),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         child: Row(
           children: [
-            Icon(icon, size: 22, color: const Color(0xFF8E8E93)),
-            const SizedBox(width: 12),
+            Icon(icon,
+                size: 23, color: Colors.white.withOpacity(0.50)),
+            const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -833,14 +890,16 @@ class _MyHomePageState extends State<MyHomePage>
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
+                      color: Color(0xF2FFFFFF),
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 3),
                   Text(
                     description,
                     style: TextStyle(
                       fontSize: 13,
-                      color: const Color(0xFF8E8E93),
+                      fontWeight: FontWeight.w300,
+                      color: Colors.white.withOpacity(0.45),
                     ),
                   ),
                 ],
@@ -854,7 +913,7 @@ class _MyHomePageState extends State<MyHomePage>
                       width: 24,
                       height: 24,
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primary,
+                        color: const Color(0xFF00D4AA),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
@@ -870,7 +929,7 @@ class _MyHomePageState extends State<MyHomePage>
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: const Color(0x338E8E93),
+                          color: Colors.white.withOpacity(0.20),
                           width: 1.5,
                         ),
                       ),
@@ -882,7 +941,7 @@ class _MyHomePageState extends State<MyHomePage>
     );
   }
 
-  // 进度卡片
+  // ── 进度卡片 ──
   Widget _buildProgressCard({
     required double? convertProgress,
     required bool done,
@@ -890,7 +949,7 @@ class _MyHomePageState extends State<MyHomePage>
     required String? finalSize,
   }) {
     return LiquidGlass(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(22),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -903,6 +962,7 @@ class _MyHomePageState extends State<MyHomePage>
                   style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
+                    color: Color(0xF2FFFFFF),
                   ),
                 ),
                 Text(
@@ -910,35 +970,44 @@ class _MyHomePageState extends State<MyHomePage>
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
-                    color: const Color(0xFF8E8E93),
+                    color: const Color(0xFF00D4AA),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            // 自定义进度条：圆角 + 动画
+            const SizedBox(height: 18),
+            // 进度条（青色渐变 + 圆角）
             ClipRRect(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(6),
               child: SizedBox(
                 height: 8,
                 child: Stack(
                   children: [
-                    // 轨道
                     Container(
                       decoration: BoxDecoration(
-                        color: const Color(0x1A8E8E93),
-                        borderRadius: BorderRadius.circular(8),
+                        color: Colors.white.withOpacity(0.06),
+                        borderRadius: BorderRadius.circular(6),
                       ),
                     ),
-                    // 进度
                     FractionallySizedBox(
                       widthFactor: convertProgress.clamp(0.0, 1.0),
                       child: Container(
                         decoration: BoxDecoration(
                           gradient: const LinearGradient(
-                            colors: [Color(0xFF000000), Color(0xFF3C3C43)],
+                            colors: [
+                              Color(0xFF00D4AA),
+                              Color(0xFF00BFFF),
+                            ],
                           ),
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(6),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF00D4AA)
+                                  .withOpacity(0.35),
+                              blurRadius: 8,
+                              spreadRadius: -2,
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -951,19 +1020,19 @@ class _MyHomePageState extends State<MyHomePage>
             Row(
               children: [
                 Container(
-                  width: 32,
-                  height: 32,
+                  width: 34,
+                  height: 34,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF000000),
+                    color: const Color(0xFF00D4AA).withOpacity(0.15),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
                     Icons.check_rounded,
                     size: 20,
-                    color: Colors.white,
+                    color: Color(0xFF00D4AA),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -973,16 +1042,18 @@ class _MyHomePageState extends State<MyHomePage>
                         style: TextStyle(
                           fontSize: 17,
                           fontWeight: FontWeight.w600,
+                          color: Color(0xF2FFFFFF),
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 3),
                       Text(
                         finalSize != null
                             ? "已转换为 ${targetFileType.extension.toUpperCase()} · $finalSize"
                             : "已转换为 ${targetFileType.extension.toUpperCase()}",
                         style: TextStyle(
                           fontSize: 13,
-                          color: const Color(0xFF8E8E93),
+                          fontWeight: FontWeight.w300,
+                          color: Colors.white.withOpacity(0.50),
                         ),
                       ),
                     ],
@@ -995,6 +1066,8 @@ class _MyHomePageState extends State<MyHomePage>
       ),
     );
   }
+
+  // ==================== 业务逻辑方法（保持不变） ====================
 
   Future<void> _pickDestinationFile(
     PickedFileInfo inputFileInfo,
@@ -1119,9 +1192,6 @@ class _MyHomePageState extends State<MyHomePage>
 
     final File? arnndnModel;
     if (voiceOptimization) {
-      //Source: https://github.com/richardpl/arnndn-models
-      //std.rnnn is originally bundled with Xiph RNNoise implementation (https://github.com/xiph/rnnoise/blob/master/src/rnn_data.c)
-      //Another good place for info: https://github.com/GregorR/rnnoise-models/tree/master
       arnndnModel = await getFileFromAssets("arnndn-models/std.rnnn");
     } else {
       arnndnModel = null;
@@ -1129,13 +1199,13 @@ class _MyHomePageState extends State<MyHomePage>
 
     final completer = Completer<ReturnCode>();
     final session = await FFmpegKit.executeAsync(
-      '-i "$readUrl"' //input (in double quotes to handle spaces)
-      "${arnndnModel == null ? "" : " -filter:a 'arnndn=model=${arnndnModel.path}:mix=1.0' "}" //apply filters to audio streams: the arnndn denoise model
+      '-i "$readUrl"'
+      "${arnndnModel == null ? "" : " -filter:a 'arnndn=model=${arnndnModel.path}:mix=1.0' "}"
       " ${targetFileType.getAdditionalArguments(
         voiceOptimization: arnndnModel != null,
       )} "
-      " -y " //overwrite
-      ' "$writeUrl"', //output
+      " -y "
+      ' "$writeUrl"',
       /* completeCallback */ (FFmpegSession session) async {
         print("command: ${session.getCommand()}");
         final ReturnCode? returnCode = await session.getReturnCode();
@@ -1159,10 +1229,8 @@ class _MyHomePageState extends State<MyHomePage>
               context: context,
               title: "转换时出错",
               error: "日志：",
-              //ffmpeg likes to use the same line for all the progress notifications,
-              // so it uses a Carriage Return to overwrite the current line.
-              // This is of course not supported here, so we replace it with a newline
-              stacktrace: output?.replaceAll(String.fromCharCode(13), "\n"),
+              stacktrace:
+                  output?.replaceAll(String.fromCharCode(13), "\n"),
             );
             setState(() {
               convertProgress = null;
@@ -1243,15 +1311,22 @@ void showErrorDialog({
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF161B22),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadiusGeometry.circular(20),
         ),
-        title: Text(title),
+        title: Text(
+          title,
+          style: const TextStyle(color: Color(0xF2FFFFFF)),
+        ),
         content: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(error),
+              Text(
+                error,
+                style: const TextStyle(color: Color(0xF2FFFFFF)),
+              ),
               const SizedBox(height: 8),
               if (stacktrace != null)
                 SingleChildScrollView(
@@ -1259,8 +1334,9 @@ void showErrorDialog({
                   child: SelectableText(
                     stacktrace,
                     style: const TextStyle(
-                      color: Colors.grey,
+                      color: Color(0x99FFFFFF),
                       fontFamily: "monospace",
+                      fontSize: 12,
                     ),
                   ),
                 ),
@@ -1270,7 +1346,10 @@ void showErrorDialog({
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text("知道了"),
+            child: const Text(
+              "知道了",
+              style: TextStyle(color: Color(0xFF00D4AA)),
+            ),
           ),
         ],
       ),
